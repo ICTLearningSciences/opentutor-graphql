@@ -6,24 +6,28 @@ The full terms of this copyright and license should always be found in the root 
 */
 import { GraphQLString, GraphQLObjectType } from 'graphql';
 import LessonType from 'gql/types/lesson';
-import DateType from 'gql/types/date';
 import { Lesson as LessonModel } from 'models';
 import { Lesson } from 'models/Lesson';
 import { User } from 'models/User';
+import { TrainingInputType } from './update-lesson';
+import { Training } from 'gql/types/training';
 
-export const updateLastTrainedAt = {
+export const updateLastTraining = {
   type: LessonType,
   args: {
     lessonId: { type: GraphQLString },
-    date: { type: DateType },
+    training: { type: TrainingInputType },
   },
   resolve: async (
     _root: GraphQLObjectType,
-    args: { lessonId: string; date: Date },
+    args: { lessonId: string; training: Training },
     context: { user: User }
   ): Promise<Lesson> => {
     if (!args.lessonId) {
       throw new Error('missing required param lessonId');
+    }
+    if (!args.training) {
+      throw new Error('missing required param training');
     }
     const lesson = await LessonModel.findOne({ lessonId: args.lessonId });
     if (!lesson) {
@@ -32,16 +36,13 @@ export const updateLastTrainedAt = {
     if (!LessonModel.userCanEdit(context.user, lesson)) {
       throw new Error('user does not have permission to edit this lesson');
     }
-    if (!args.date) {
-      args.date = new Date();
-    }
 
     return await LessonModel.findOneAndUpdate(
       {
         lessonId: args.lessonId,
       },
       {
-        lastTrainedAt: args.date,
+        lastTraining: args.training,
       },
       {
         new: true, // return the updated doc rather than pre update
@@ -51,4 +52,4 @@ export const updateLastTrainedAt = {
   },
 };
 
-export default updateLastTrainedAt;
+export default updateLastTraining;

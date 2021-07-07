@@ -12,6 +12,7 @@ import {
   GraphQLList,
   GraphQLBoolean,
   GraphQLID,
+  GraphQLFloat,
 } from 'graphql';
 import GraphQLJSON from 'graphql-type-json';
 import LessonType from 'gql/types/lesson';
@@ -22,6 +23,8 @@ import {
 } from 'models';
 import { Lesson } from 'models/Lesson';
 import { User } from 'models/User';
+import { Training } from 'gql/types/training';
+import { DateType } from 'gql/types/date';
 
 export interface UpdateHint {
   text: string;
@@ -42,7 +45,7 @@ export interface UpdateLesson {
   image: string;
   expectations: UpdateLessonExpectation[];
   conclusion: string[];
-  lastTrainedAt: Date;
+  lastTraining: Training;
   features: any;
   createdBy: string;
   deleted: boolean;
@@ -64,6 +67,14 @@ export const UpdateLessonExpectationInputType = new GraphQLInputObjectType({
   }),
 });
 
+export const TrainingInputType = new GraphQLInputObjectType({
+  name: 'TrainingInputType',
+  fields: () => ({
+    trainedAt: { type: DateType },
+    accuracy: { type: GraphQLList(GraphQLFloat) },
+  }),
+});
+
 export const UpdateLessonInputType = new GraphQLInputObjectType({
   name: 'UpdateLessonInputType',
   fields: () => ({
@@ -75,7 +86,7 @@ export const UpdateLessonInputType = new GraphQLInputObjectType({
     image: { type: GraphQLString },
     expectations: { type: GraphQLList(UpdateLessonExpectationInputType) },
     conclusion: { type: GraphQLList(GraphQLString) },
-    lastTrainedAt: { type: GraphQLString },
+    lastTraining: { type: TrainingInputType },
     features: { type: GraphQLJSON },
     createdBy: { type: GraphQLID },
     deleted: { type: GraphQLBoolean },

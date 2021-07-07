@@ -130,7 +130,7 @@ describe('lesson', () => {
               features
             }
             conclusion
-            lastTrainedAt
+            lastTraining
             features
             createdBy
             createdByName
@@ -176,7 +176,7 @@ describe('lesson', () => {
       image: 'some/image.png',
       createdBy: '5f0cfea3395d762ca65405d1',
       createdByName: 'Admin',
-      lastTrainedAt: null,
+      lastTraining: null,
     });
   });
 

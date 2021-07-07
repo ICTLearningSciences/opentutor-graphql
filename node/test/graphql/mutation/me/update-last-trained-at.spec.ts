@@ -12,7 +12,7 @@ import request from 'supertest';
 import timekeeper from 'timekeeper';
 import { getToken } from '../../../helpers';
 
-describe('updateLastTrainedAt', () => {
+describe('updateLastTraining', () => {
   let app: Express;
 
   beforeEach(async () => {
@@ -27,17 +27,25 @@ describe('updateLastTrainedAt', () => {
     await mongoUnit.drop();
   });
 
-  it(`throws an error if not logged in`, async () => {
+  it.only(`throws an error if not logged in`, async () => {
     const response = await request(app)
       .post('/graphql')
       .send({
-        query: `mutation {
+        query: `mutation UpdateTraining($lesson: String!, $training: TrainingInputType!) {
           me {
-            updateLastTrainedAt(lessonId: "") { 
-              lastTrainedAt
+            updateLastTraining(lessonId: $lesson, training: $training) { 
+              trainedAt
+              accuracy
             }   
           }
         }`,
+        variables: {
+          lesson : "lesson1",
+          training: {
+            trainedAt: new Date(),
+            accuracy: [1.50, 2.00]
+          }
+        }
       });
     expect(response.status).to.equal(200);
     expect(response.body).to.have.deep.nested.property(

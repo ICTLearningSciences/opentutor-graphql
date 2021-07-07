@@ -4,6 +4,7 @@ Permission to use, copy, modify, and distribute this software and its documentat
 
 The full terms of this copyright and license should always be found in the root directory of this software deliverable as "license.txt" and if these terms are not found with this software, please contact the USC Stevens Center for the full license.
 */
+import { Training } from 'gql/types/training';
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { HasPaginate, pluginPagination } from './Paginatation';
 import { User, UserRole } from './User';
@@ -28,6 +29,11 @@ const LessonExpectationSchema = new Schema({
   hints: { type: [HintSchema] },
 });
 
+const TrainingSchema = new Schema({
+  trainedAt: { type: Date },
+  accuracy: { type: [String] },
+});
+
 export type Features = Record<string, unknown>;
 
 export interface Lesson extends Document {
@@ -39,7 +45,7 @@ export interface Lesson extends Document {
   image: string;
   expectations: [LessonExpectation];
   conclusion: [string];
-  lastTrainedAt: Date;
+  lastTraining: Training;
   features: Features;
   createdBy: mongoose.Types.ObjectId;
   createdByName: string;
@@ -56,7 +62,7 @@ export const LessonSchema = new Schema(
     image: { type: String },
     expectations: { type: [LessonExpectationSchema] },
     conclusion: { type: [String] },
-    lastTrainedAt: { type: Date },
+    lastTraining: { type: TrainingSchema },
     features: { type: Object },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     createdByName: { type: String },

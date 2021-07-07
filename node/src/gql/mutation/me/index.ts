@@ -8,7 +8,7 @@ import { GraphQLObjectType } from 'graphql';
 import { User } from 'models/User';
 import deleteLesson from './delete-lesson';
 import setGrade from './set-grade';
-import updateLastTrainedAt from './update-last-trained-at';
+import updateLastTraining from './update-last-trained-at';
 import updateLesson from './update-lesson';
 import updateLessonFeatures from './update-lesson-features';
 import updateSession from './update-session';
@@ -19,7 +19,7 @@ export const Me: GraphQLObjectType = new GraphQLObjectType({
   fields: {
     deleteLesson,
     setGrade,
-    updateLastTrainedAt,
+    updateLastTraining,
     updateLesson,
     updateLessonFeatures,
     updateSession,

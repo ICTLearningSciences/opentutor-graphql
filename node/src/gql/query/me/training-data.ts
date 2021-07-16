@@ -38,7 +38,11 @@ export const trainingData = {
       const trainingData = await Session.getTrainingData(args.lessonId);
       const config = {
         expectations: lesson.expectations.map((exp) => {
-          return { ideal: exp.expectation, features: exp.features };
+          return {
+            expectationId: exp.expectationId,
+            ideal: exp.expectation,
+            features: exp.features,
+          };
         }),
         question: lesson.question,
       };

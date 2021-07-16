@@ -123,12 +123,14 @@ describe('session', () => {
             question {
               text
               expectations {
+                expectationId
                 text
               }
             }
             userResponses {
               text
               expectationScores {
+                expectationId
                 classifierGrade
                 graderGrade
               }
@@ -148,8 +150,8 @@ describe('session', () => {
       question: {
         text: 'question?',
         expectations: [
-          { text: 'expected text 1' },
-          { text: 'expected text 2' },
+          { expectationId: '0', text: 'expected text 1' },
+          { expectationId: '1', text: 'expected text 2' },
         ],
       },
       userResponses: [
@@ -157,6 +159,7 @@ describe('session', () => {
           text: 'answer1',
           expectationScores: [
             {
+              expectationId: '0',
               classifierGrade: 'Good',
               graderGrade: '',
             },
@@ -166,6 +169,7 @@ describe('session', () => {
           text: 'answer2',
           expectationScores: [
             {
+              expectationId: '0',
               classifierGrade: 'Bad',
               graderGrade: '',
             },

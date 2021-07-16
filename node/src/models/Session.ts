@@ -12,10 +12,12 @@ import LessonModel, { Lesson } from './Lesson';
 import UserModel, { User } from './User';
 
 interface Expectation extends Document {
+  expectationId: string;
   text: string;
 }
 
 const ExpectationSchema = new Schema({
+  expectationId: { type: String },
   text: { type: String },
 });
 
@@ -36,12 +38,16 @@ const QuestionSchema = new Schema({
 });
 
 export interface ExpectationScore extends Document {
+  expectationId: string;
   invalidated: boolean;
   classifierGrade: Grade;
   graderGrade?: Grade;
 }
 
 const ExpectationScoreSchema = new Schema({
+  expectationId: {
+    type: String,
+  },
   invalidated: { type: Boolean, default: false },
   classifierGrade: {
     type: String,
@@ -192,7 +198,12 @@ SessionSchema.statics.getAllTrainingData =
               question: lesson.question,
               ideal: lesson.expectations[expIx].expectation,
             });
-            trainingData.push([`${expIx}`, response.text, grade, expData]);
+            trainingData.push([
+              response.expectationScores[expIx].expectationId,
+              response.text,
+              grade,
+              expData,
+            ]);
           }
         }
       });
@@ -235,7 +246,11 @@ SessionSchema.statics.getTrainingData = async function (
           expectationGradingStats[expIx][grade] += 1;
           // Classifier cannot use Neutral data
           if (grade !== 'Neutral') {
-            trainingData.push([`${expIx}`, response.text, grade]);
+            trainingData.push([
+              response.expectationScores[expIx].expectationId,
+              response.text,
+              grade,
+            ]);
           }
         }
       }
@@ -255,19 +270,27 @@ SessionSchema.statics.getTrainingData = async function (
 
 SessionSchema.statics.updateLesson = async function (
   lessonId: string,
-  updatedLesson: { lessonId: string; createdBy: string; name: string }
+  updatedLesson: { lessonId?: string; createdBy?: string; name?: string }
 ) {
-  const createdBy = await UserModel.findOne({ _id: updatedLesson.createdBy });
+  const sessionUpdates: Partial<Session> = {};
+  if (updatedLesson.lessonId) {
+    sessionUpdates.lessonId = updatedLesson.lessonId;
+  }
+  if (updatedLesson.createdBy) {
+    const createdBy = await UserModel.findOne({ _id: updatedLesson.createdBy });
+    if (createdBy) {
+      sessionUpdates.lessonCreatedBy = createdBy ? createdBy.name : '';
+    }
+  }
+  if (updatedLesson.name) {
+    sessionUpdates.lessonName = updatedLesson.name;
+  }
   await this.updateMany(
     {
       lessonId: lessonId,
     },
     {
-      $set: {
-        lessonId: updatedLesson.lessonId,
-        lessonName: updatedLesson.name,
-        lessonCreatedBy: createdBy ? createdBy.name : '',
-      },
+      $set: sessionUpdates,
     }
   );
 };

@@ -129,10 +129,12 @@ describe('training data', () => {
       question: 'question?',
       expectations: [
         {
+          expectationId: '0',
           ideal: 'expected text 1',
           features: null,
         },
         {
+          expectationId: '1',
           ideal: 'expected text 2',
           features: null,
         },
@@ -200,6 +202,7 @@ describe('training data', () => {
       question: 'question',
       expectations: [
         {
+          expectationId: '0',
           ideal: 'answer1',
           features: {
             ideal: 'new ideal answer',
@@ -208,6 +211,7 @@ describe('training data', () => {
           },
         },
         {
+          expectationId: '1',
           ideal: 'answer2',
           features: {
             good: ['good regex 2'],

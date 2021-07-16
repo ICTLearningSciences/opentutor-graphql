@@ -6,10 +6,55 @@ The full terms of this copyright and license should always be found in the root 
 */
 import createApp, { appStart, appStop } from 'app';
 import { expect } from 'chai';
-import { Express } from 'express';
+import { describe } from 'mocha';
+import { Express, json, response } from 'express';
 import mongoUnit from 'mongo-unit';
 import request from 'supertest';
 import { getToken } from 'test/helpers';
+
+const GQL_UPDATE_LESSON_FULL = {
+  query: `mutation UpdateLesson($lessonId: ID!, $lesson: UpdateLessonInputType!) {
+    me {
+      updateLesson(lessonId: $lessonId, lesson: $lesson) {
+        lessonId
+        name
+        intro
+        dialogCategory
+        question
+        expectations {
+          expectation
+          hints {
+            text
+          }
+        }
+        conclusion
+        createdByName
+      }   
+    }
+  }`,
+  variables: {
+    lessonId: 'lesson1',
+    lesson: {
+      lessonId: 'lesson1-updated',
+    },
+  },
+};
+
+const GQL_UPDATE_LESSON_DEFAULT = {
+  query: `mutation UpdateLesson($lessonId: ID!, $lesson: UpdateLessonInputType!) {
+  me {
+    updateLesson(lessonId: $lessonId, lesson: $lesson) {
+      lessonId
+    }   
+  }
+}`,
+  variables: {
+    lessonId: 'lesson1',
+    lesson: {
+      lessonId: 'lesson1-updated',
+    },
+  },
+};
 
 describe('updateLesson', () => {
   let app: Express;
@@ -28,15 +73,7 @@ describe('updateLesson', () => {
   it(`throws an error if not logged in`, async () => {
     const response = await request(app)
       .post('/graphql')
-      .send({
-        query: `mutation {
-          me {
-            updateLesson(lesson: {}) { 
-              lessonId
-            }   
-          }
-        }`,
-      });
+      .send(GQL_UPDATE_LESSON_DEFAULT);
     expect(response.status).to.equal(200);
     expect(response.body).to.have.deep.nested.property(
       'errors[0].message',
@@ -90,18 +127,15 @@ describe('updateLesson', () => {
       .post('/graphql')
       .set('Authorization', `bearer ${token}`)
       .send({
-        query: `mutation {
-          me {
-            updateLesson(lesson: {}) { 
-              lessonId
-            }   
-          }
-        }`,
+        ...GQL_UPDATE_LESSON_DEFAULT,
+        variables: {
+          lesson: GQL_UPDATE_LESSON_DEFAULT.variables.lesson,
+        },
       });
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(500);
     expect(response.body).to.have.deep.nested.property(
       'errors[0].message',
-      'missing required param lessonId'
+      'Variable "$lessonId" of required type "ID!" was not provided.'
     );
   });
 
@@ -149,20 +183,17 @@ describe('updateLesson', () => {
 
   it(`args.lessonId must be lowercase`, async () => {
     const token = getToken('5f0cfea3395d762ca65405d1');
-    const lesson = JSON.stringify({
-      lessonId: 'a',
-    }).replace(/"([^"]+)":/g, '$1:');
     const response = await request(app)
       .post('/graphql')
       .set('Authorization', `bearer ${token}`)
       .send({
-        query: `mutation {
-          me {
-            updateLesson(lessonId: "A", lesson: ${lesson}) {
-              lessonId
-            }   
-          }
-        }`,
+        ...GQL_UPDATE_LESSON_DEFAULT,
+        variables: {
+          lessonId: GQL_UPDATE_LESSON_DEFAULT.variables.lessonId,
+          lesson: {
+            lessonId: 'A',
+          },
+        },
       });
     expect(response.status).to.equal(200);
     expect(response.body).to.have.deep.nested.property(
@@ -204,13 +235,13 @@ describe('updateLesson', () => {
       .post('/graphql')
       .set('Authorization', `bearer ${token}`)
       .send({
-        query: `mutation {
-          me {
-            updateLesson(lessonId: "!", lesson: ${lesson}) {
-              lessonId
-            }   
-          }
-        }`,
+        ...GQL_UPDATE_LESSON_DEFAULT,
+        variables: {
+          lessonId: GQL_UPDATE_LESSON_DEFAULT.variables.lessonId,
+          lesson: {
+            lessonId: '$1',
+          },
+        },
       });
     expect(response.status).to.equal(200);
     expect(response.body).to.have.deep.nested.property(
@@ -252,17 +283,17 @@ describe('updateLesson', () => {
       .set('opentutor-api-req', 'true')
       .set('Authorization', `bearer ${process.env.API_SECRET}`)
       .send({
-        query: `mutation {
-          me {
-            updateLesson(lessonId: "lesson1", lesson: ${lesson}) {
-              lessonId
-            }   
-          }
-        }`,
+        ...GQL_UPDATE_LESSON_DEFAULT,
+        variables: {
+          lessonId: 'lesson1',
+          lesson: {
+            lessonId: 'lesson1-updated',
+          },
+        },
       });
     expect(response.status).to.equal(200);
     expect(response.body.data.me.updateLesson).to.eql({
-      lessonId: 'lesson1',
+      lessonId: 'lesson1-updated',
     });
   });
 
@@ -338,7 +369,7 @@ describe('updateLesson', () => {
 
   it(`creates a new lesson`, async () => {
     const token = getToken('5f0cfea3395d762ca65405d1');
-    const lesson = JSON.stringify({
+    const lesson = {
       lessonId: 'newlesson',
       name: 'new name',
       intro: 'new intro',
@@ -356,30 +387,16 @@ describe('updateLesson', () => {
           ],
         },
       ],
-    }).replace(/"([^"]+)":/g, '$1:');
+    };
     const response = await request(app)
       .post('/graphql')
       .set('Authorization', `bearer ${token}`)
       .send({
-        query: `mutation {
-          me {
-            updateLesson(lessonId: "newlesson", lesson: ${lesson}) {
-              lessonId
-              name
-              intro
-              dialogCategory
-              question
-              expectations {
-                expectation
-                hints {
-                  text
-                }
-              }
-              conclusion
-              createdByName
-            }   
-          }
-        }`,
+        ...GQL_UPDATE_LESSON_FULL,
+        variables: {
+          lessonId: 'newlesson',
+          lesson: lesson,
+        },
       });
     expect(response.status).to.equal(200);
     expect(response.body.data.me.updateLesson).to.eql({

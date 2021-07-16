@@ -6,7 +6,34 @@ The full terms of this copyright and license should always be found in the root 
 */
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { HasPaginate, pluginPagination } from './Paginatation';
-import { User, UserRole } from './User';
+import UserModel, { User, UserRole } from './User';
+import { v4 as uuidv4 } from 'uuid';
+
+export interface UpdateHint {
+  text: string;
+}
+
+export interface UpdateLessonExpectation {
+  expectationId: string;
+  expectation: string;
+  features: any;
+  hints: UpdateHint[];
+}
+
+export interface UpdateLesson {
+  lessonId: string;
+  name: string;
+  intro: string;
+  dialogCategory: string;
+  question: string;
+  image: string;
+  expectations: UpdateLessonExpectation[];
+  conclusion: string[];
+  lastTrainedAt: Date;
+  features: any;
+  createdBy: string;
+  deleted: boolean;
+}
 
 interface Hint extends Document {
   text: string;
@@ -17,12 +44,14 @@ const HintSchema = new Schema({
 });
 
 export interface LessonExpectation extends Document {
+  expectationId: string;
   expectation: string;
   features: Features;
   hints: [Hint];
 }
 
 const LessonExpectationSchema = new Schema({
+  expectationId: { type: String },
   expectation: { type: String },
   features: { type: Object },
   hints: { type: [HintSchema] },
@@ -66,11 +95,58 @@ export const LessonSchema = new Schema(
 );
 
 export interface LessonModel extends Model<Lesson>, HasPaginate<Lesson> {
+  findAndUpdateLessonById(
+    lessonId: string,
+    lessonDoc: UpdateLesson
+  ): Promise<Lesson>;
+
   userCanEdit(
     user: User,
     lesson: { createdBy: string | mongoose.Types.ObjectId }
   ): boolean;
 }
+
+/**
+ * Update a lesson, setting any of it's provided props
+ * This is functionally the same as mongoose findOneAndUpdate,
+ * but enforces lesson-specific rules. Always use this and not findOneAndUpdate
+ */
+LessonSchema.statics.findAndUpdateLessonById = async function (
+  lessonId: string,
+  lessonUpdates: UpdateLesson
+): Promise<Lesson> {
+  const updateDoc = {
+    ...lessonUpdates,
+  } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (updateDoc.lessonId && !updateDoc.lessonId?.match(/^[a-z0-9\-]+$/)) {
+    throw new Error('lessonId must match [a-z0-9-]');
+  }
+  if (updateDoc.expectations) {
+    (updateDoc.expectations as UpdateLessonExpectation[]).forEach((element) => {
+      if (!element.expectationId) element.expectationId = uuidv4().toString();
+    });
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (mongoose.model('Session') as any).updateLesson(lessonId, updateDoc);
+  if (updateDoc.createdBy) {
+    const createdBy = await UserModel.findOne({ _id: updateDoc.createdBy });
+    if (createdBy) {
+      updateDoc.createdByName = createdBy.name;
+    }
+  }
+  return await this.findOneAndUpdate(
+    {
+      lessonId: lessonId,
+    },
+    {
+      $set: updateDoc,
+    },
+    {
+      new: true, // return the updated doc rather than pre update
+      upsert: true,
+    }
+  );
+};
 
 LessonSchema.statics.userCanEdit = function (
   user: User,

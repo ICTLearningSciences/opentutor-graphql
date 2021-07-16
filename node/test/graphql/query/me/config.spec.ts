@@ -23,6 +23,7 @@ const GQL_QUERY_CONFIG = `query Config($lessonId: String!) {
 `;
 
 interface Expectation {
+  expectationId: string;
   ideal: string;
   features?: Record<string, unknown> | null;
 }
@@ -36,10 +37,12 @@ const LESSON_1_CONFIG: Config = {
   question: 'question?',
   expectations: [
     {
+      expectationId: '0',
       ideal: 'expected text 1',
       features: null,
     },
     {
+      expectationId: '1',
       ideal: 'expected text 2',
       features: null,
     },
@@ -152,6 +155,7 @@ describe('config', () => {
         question: 'question',
         expectations: [
           {
+            expectationId: '0',
             ideal: 'answer1',
             features: {
               bad: ['bad regex 1'],
@@ -160,6 +164,7 @@ describe('config', () => {
             },
           },
           {
+            expectationId: '1',
             ideal: 'answer2',
             features: {
               bad: ['bad regex 2'],

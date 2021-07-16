@@ -37,7 +37,11 @@ export const config = {
     try {
       const config = {
         expectations: lesson.expectations.map((exp) => {
-          return { ideal: exp.expectation, features: exp.features };
+          return {
+            expectationId: exp.expectationId,
+            ideal: exp.expectation,
+            features: exp.features,
+          };
         }),
         question: lesson.question,
       };

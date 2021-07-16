@@ -25,6 +25,7 @@ const HintType = new GraphQLObjectType({
 const LessonExpectationType = new GraphQLObjectType({
   name: 'LessonExpectation',
   fields: {
+    expectationId: { type: GraphQLString },
     expectation: { type: GraphQLString },
     hints: { type: GraphQLList(HintType) },
     features: { type: GraphQLJSON },

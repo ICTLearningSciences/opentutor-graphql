@@ -15,39 +15,9 @@ import {
 } from 'graphql';
 import GraphQLJSON from 'graphql-type-json';
 import LessonType from 'gql/types/lesson';
-import {
-  Lesson as LessonModel,
-  Session as SessionModel,
-  User as UserModel,
-} from 'models';
-import { Lesson } from 'models/Lesson';
+import { Lesson as LessonModel } from 'models';
+import { Lesson, UpdateLesson } from 'models/Lesson';
 import { User } from 'models/User';
-
-export interface UpdateHint {
-  text: string;
-}
-
-export interface UpdateLessonExpectation {
-  expectation: string;
-  features: any;
-  hints: UpdateHint[];
-}
-
-export interface UpdateLesson {
-  lessonId: string;
-  name: string;
-  intro: string;
-  dialogCategory: string;
-  question: string;
-  image: string;
-  expectations: UpdateLessonExpectation[];
-  conclusion: string[];
-  lastTrainedAt: Date;
-  features: any;
-  createdBy: string;
-  deleted: boolean;
-}
-
 export const UpdateHintInputType = new GraphQLInputObjectType({
   name: 'UpdateHintInputType',
   fields: () => ({
@@ -58,6 +28,7 @@ export const UpdateHintInputType = new GraphQLInputObjectType({
 export const UpdateLessonExpectationInputType = new GraphQLInputObjectType({
   name: 'UpdateLessonExpectationInputType',
   fields: () => ({
+    expectationId: { type: GraphQLString },
     expectation: { type: GraphQLString },
     features: { type: GraphQLJSON },
     hints: { type: GraphQLList(UpdateHintInputType) },
@@ -85,7 +56,7 @@ export const UpdateLessonInputType = new GraphQLInputObjectType({
 export const updateLesson = {
   type: LessonType,
   args: {
-    lessonId: { type: GraphQLString },
+    lessonId: { type: GraphQLNonNull(GraphQLID) },
     lesson: { type: GraphQLNonNull(UpdateLessonInputType) },
   },
   resolve: async (
@@ -93,43 +64,28 @@ export const updateLesson = {
     args: { lessonId: string; lesson: UpdateLesson },
     context: { user: User }
   ): Promise<Lesson> => {
-    if (!args.lessonId) {
-      throw new Error('missing required param lessonId');
-    }
-    if (!args.lesson) {
-      throw new Error('missing required param lesson');
-    }
-    const lesson = args.lesson;
-    if (lesson.deleted) {
-      throw new Error('lesson was deleted');
-    }
-    if (
-      !args.lessonId.match(/^[a-z0-9\-]+$/) ||
-      !lesson.lessonId.match(/^[a-z0-9\-]+$/)
-    ) {
-      throw new Error('lessonId must match [a-z0-9-]');
-    }
-    if (!LessonModel.userCanEdit(context.user, lesson)) {
-      throw new Error('user does not have permission to edit this lesson');
-    }
-    await SessionModel.updateLesson(args.lessonId, lesson);
-    const createdBy = await UserModel.findOne({ _id: lesson.createdBy });
-
-    return await LessonModel.findOneAndUpdate(
-      {
-        lessonId: args.lessonId,
-      },
-      {
-        $set: {
-          ...lesson,
-          createdByName: createdBy ? createdBy.name : '',
-        },
-      },
-      {
-        new: true, // return the updated doc rather than pre update
-        upsert: true,
+    try {
+      if (!args.lessonId) {
+        throw new Error('missing required param lessonId');
       }
-    );
+      if (!args.lesson) {
+        throw new Error('missing required param lesson');
+      }
+      const lessonUpdates = args.lesson;
+      if (lessonUpdates.deleted) {
+        throw new Error('lesson was deleted');
+      }
+      if (!LessonModel.userCanEdit(context.user, lessonUpdates)) {
+        throw new Error('user does not have permission to edit this lesson');
+      }
+      return await LessonModel.findAndUpdateLessonById(
+        args.lessonId,
+        lessonUpdates
+      );
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   },
 };
 
